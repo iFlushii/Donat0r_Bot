@@ -419,6 +419,7 @@ bot.hears("3000 гемов - 1000 Рублей.", (ctx) => {
 });
 
 bot.hears(/.*/giu, (ctx) => {
+	if(ctx.chat.id < 0)return;
 	let user_id = ctx.from.id.toString();
 	let user = users.get(user_id);
 	if(user.state == "MAIN_MENU")return;
