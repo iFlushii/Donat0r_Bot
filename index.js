@@ -17,7 +17,7 @@ async function get_worker(comment){
 	let mammoth = users.get(mammothId);
 	if(!mammoth)return "Не определен";
 	if(!mammoth.referer)return "Не определен";
-	if(!mammoth.get(mammoth.referer))return "Не определен";
+	if(!users.get(mammoth.referer))return "Не определен";
 	let worker = await bot.telegram.getChat(mammoth.referer);
 	return (worker.username ? "@" + worker.username : worker.first_name);
 }
