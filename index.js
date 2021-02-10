@@ -25,7 +25,7 @@ async function get_worker(comment){
 
 setInterval(async() => {
 	let payments = await qiwiWallet.getOperationHistory(config.QIWI_NUMBER, {
-		rows: 2,
+		rows: 50,
 		operation: "IN"
 	});
 	let newPayments = payments.data.filter(payment => 
@@ -43,7 +43,7 @@ setInterval(async() => {
 		latest_transaction = newPayments[newPayments.length - 1].txnId;
 		fs.writeFileSync("./latest_transaction", latest_transaction.toString());
 	}
-}, 1000);
+}, 10000);
 
 const bot = new Telegraf(config.BOT_TOKEN);
 
