@@ -348,6 +348,13 @@ bot.hears("3000(+ 1000)UC - 1000 Рублей.", (ctx) => {
 	generatePayment(ctx, 1000);
 });
 
+bot.hears("400(+100)UC - 200 Рублей.", (ctx) => {
+	let user_id = ctx.from.id.toString();
+	let user = users.get(user_id);
+	if(user.state != "SELECT_AMOUNT|PUBG_MOBILE")return;
+	generatePayment(ctx, 200);
+});
+
 bot.hears("6000(+ 2400)UC - 2000 Рублей.", (ctx) => {
 	let user_id = ctx.from.id.toString();
 	let user = users.get(user_id);
@@ -511,6 +518,7 @@ bot.hears(/.*/giu, (ctx) => {
 				ctx.reply(phrases.PUBG_MOBILE_SELECT_AMOUNT, Keyboard.make([
 					["600(+ 90)UC - 300 Рублей.", "1500(+ 375)UC - 500 Рублей."],
 					["3000(+ 1000)UC - 1000 Рублей.", "6000(+ 2400)UC - 2000 Рублей."],
+					["400(+100)UC - 200 Рублей."],
 					["❌ Отмена ❌"]
 				]).reply());
 				user.state = "SELECT_AMOUNT|PUBG_MOBILE";
