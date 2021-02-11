@@ -516,9 +516,9 @@ bot.hears(/.*/giu, (ctx) => {
 		switch(user.state.slice("ACCOUNT_INFO|".length)){
 			case "PUBG_MOBILE":
 				ctx.reply(phrases.PUBG_MOBILE_SELECT_AMOUNT, Keyboard.make([
-					["600(+ 90)UC - 300 Рублей.", "1500(+ 375)UC - 500 Рублей."],
-					["3000(+ 1000)UC - 1000 Рублей.", "6000(+ 2400)UC - 2000 Рублей."],
-					["400(+100)UC - 200 Рублей."],
+					["400(+100)UC - 200 Рублей.", "600(+ 90)UC - 300 Рублей."],
+					["1500(+ 375)UC - 500 Рублей.", "3000(+ 1000)UC - 1000 Рублей."],
+					["6000(+ 2400)UC - 2000 Рублей."],
 					["❌ Отмена ❌"]
 				]).reply());
 				user.state = "SELECT_AMOUNT|PUBG_MOBILE";
