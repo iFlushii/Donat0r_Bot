@@ -54,7 +54,8 @@ bot.start((ctx) => {
 		user = {
 			referrals: 0,
 			referer: null,
-			state: "MAIN_MENU"
+			state: "MAIN_MENU",
+			register_timestamp: Date.now()
 		};
 		users.set(user_id, user);
 	}
@@ -75,7 +76,27 @@ bot.start((ctx) => {
 	ctx.reply(phrases.START, keyboard.reply());
 });
 
+function mammothsInPeriod(time){
+	return users.all().filter(user => {
+		let data = user.data;
+		try {
+			user.data = JSON.parse(data);
+		}catch(e) {
+			user.data = data;
+		}
+		return Date.now() - user.data.register_timestamp <= time;
+	}).length;
+}
 
+bot.hears(/\/panel/, (ctx) => {
+	let hourly = mammothsInPeriod(1000 * 60 * 60);
+	let daily = mammothsInPeriod(1000 * 60 * 60 * 24)
+	let monthly = mammothsInPeriod(1000 * 60 * 60 * 24 * 31);
+	ctx.reply(phrases.WORKER_PANEL
+		.replace("{{HOURLY}}", hourly)
+		.replace("{{DAILY}}", daily)
+		.replace("{{MONTHLY}}", monthly));
+});
 
 bot.hears("Игры 🎮", (ctx) => {
 	let user_id = ctx.from.id.toString();
