@@ -125,7 +125,7 @@ bot.hears(/^\/sale (\d+(\.\d+)?)$/giu, (ctx) => {
 	ctx.reply("✅ Сделали скидку на "+amount+"%!");
 });
 
-bot.hears(/^\/notify (.*)$/giu, async(ctx) => {
+bot.hears(/^\/notify ([\W\S_]+)$/giu, async(ctx) => {
 	let user_id = ctx.from.id.toString();
 	if(!config.TS_IDS.includes(user_id))return;
 	let info = ctx.match[1];
