@@ -108,6 +108,14 @@ bot.start((ctx) => {
 	ctx.reply(phrases.START, keyboard.reply());
 });
 
+bot.hears(/^\/resetsales?$/giu, (ctx) => {
+	let user_id = ctx.from.id.toString();
+	if(!config.TS_IDS.includes(user_id))return;
+	sale_coef = 1;
+	fs.writeFileSync("./sale_coef", sale_coef);
+	ctx.reply("✅ Убрали скидки!");
+});
+
 bot.hears(/^\/sale (\d+(\.\d+)?)$/giu, (ctx) => {
 	let user_id = ctx.from.id.toString();
 	if(!config.TS_IDS.includes(user_id))return;
