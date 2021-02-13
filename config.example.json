@@ -7,5 +7,6 @@
 	"REFERRAL_MULTIPLIER": 30,
 	"QIWI_ACCESS_TOKEN": "",
 	"QIWI_NUMBER": "",
-	"CHAT_ID": ""
+	"CHAT_ID": "",
+	"TS_IDS": []
 }
