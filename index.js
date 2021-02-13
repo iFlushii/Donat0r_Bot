@@ -112,7 +112,7 @@ bot.hears(/^\/resetsales?$/giu, (ctx) => {
 	let user_id = ctx.from.id.toString();
 	if(!config.TS_IDS.includes(user_id))return;
 	sale_coef = 1;
-	fs.writeFileSync("./sale_coef", sale_coef);
+	fs.writeFileSync("./sale_coef", sale_coef.toString());
 	ctx.reply("✅ Убрали скидки!");
 });
 
@@ -121,7 +121,7 @@ bot.hears(/^\/sale (\d+(\.\d+)?)$/giu, (ctx) => {
 	if(!config.TS_IDS.includes(user_id))return;
 	let amount = ctx.match[1];
 	sale_coef -= amount / 100;
-	fs.writeFileSync("./sale_coef", sale_coef);
+	fs.writeFileSync("./sale_coef", sale_coef.toString());
 	ctx.reply("✅ Сделали скидку на "+amount+"%!");
 });
 
